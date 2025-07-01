@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+ <head>
+   <meta charset="utf-8" />
+   <title>My experiment</title>
+
+   <!-- Load jsPsych core and plugins -->
+   <script src="LlistOfPlugins/jspsych.js"></script>
+   <script src="LlistOfPlugins/plugin-preload.js"></script>
+   <script src="LlistOfPlugins/plugin-html-button-response.js"></script>
+   <script src="LlistOfPlugins/plugin-survey-html-form.js"></script>
+   <script src="LlistOfPlugins/plugin-instructions.js"></script>
+
+
+<script src="https://unpkg.com/jszip/dist/jszip.js"/></script>
+<script src="https://unpkg.com/@jspsych-contrib/plugin-nextcloud-filedrop@2.0.0"/></script>
+
+
+   <link href="LlistOfPlugins/jspsych.css" rel="stylesheet" type="text/css" />
+
+   <style>
+     textarea {
+       width: 100%;
+       resize: vertical;
+     }
+   </style>
+ </head>
+
+ <body></body>
+
+ <script>
+   const jsPsych = initJsPsych({
+     show_progress_bar: true,
+     message_progress_bar: "Progrès",
+   });
+
+   const subject_id = jsPsych.randomization.randomID(15);
+   jsPsych.data.addProperties({ subject_id: subject_id });
+
+   const timeline = [];
+
+   // Consent form
+   const consent_trial = {
+     type: jsPsychHtmlButtonResponse,
+     stimulus: `
+       <div style="font-size: 16px; text-align: left; width:65em;">
+         <p>J'ai lu cette page et je suis conscient que l'on me demande de participer à une étude de recherche.</p>
+         <p>Vous avez lu et compris les informations ci-dessus.</p>
+         <p>Vous avez plus que 18 ans.</p>
+         <p>Vous confirmez votre consentement à l'utilisation des données récoltées conformément au RGPD.</p>
+         <p>Pour imprimer ou sauvegarder une copie de cette page, utilisez le bouton d'impression de votre navigateur.</p>
+         <p>
+           <input type="checkbox" id="creditcx" />
+           <label for="creditcx">Je consens à participer à cette expérience.</label>
+         </p>
+         <p id="consent-error" style="color: red; display: none;">Vous devez consentir à participer avant de continuer.</p>
+         <p>Si vous ne souhaitez pas participer, veuillez fermer cet onglet dans votre navigateur.</p>
+       </div>
+     `,
+     choices: ["Cliquez ici pour continuer"],
+     on_load: function () {
+       const button = document.querySelector(".jspsych-btn");
+       const consentBox = document.getElementById("creditcx");
+       button.disabled = true;
+       consentBox.addEventListener("click", () => {
+         button.disabled = !consentBox.checked;
+       });
+     },
+     on_finish: function (data) {
+       const consentBox = document.getElementById("creditcx");
+       data.consented = consentBox ? consentBox.checked : false;
+     },
+   };
+   timeline.push(consent_trial);
+
+// Instructions trial
+// Instructions trial
+const instructions_trial = {
+  type: jsPsychInstructions,
+  pages: [
+    `<div style="font-size: 16px; text-align: left; width:65em;">
+      <h2>Instructions</h2>
+      <p>Dans cette étude, vous allez lire une décision de justice.</p>
+      <p>Vous devrez répondre à plusieurs questions sur le contenu. Vous aurez libre accès au document juridique pendant que vous répondez aux questions.</p>
+      <p><strong>Les réponses aux questions doivent être courtes, mais précises. Si vous avez du mal à trouver la bonne réponse dans le texte, n'hésitez pas à écrire "Je ne sais pas".</strong></p>
+      <p>Pour vous aider à comprendre le type de questions qui vous seront posées, voici un exemple avec un essai d'entraînement :</p>
+    </div>`,
+    `<div style="font-size: 16px; text-align: left; width:65em;">
+      <h3>Un essai d'entraînement</h3>
+      <p>Marie et Pierre sont voisins. Un jour, Pierre construit une nouvelle clôture qui empiète de 50 centimètres sur le terrain de Marie. Marie lui demande gentiment de déplacer sa clôture, mais Pierre refuse.</p>
+      <p>Marie décide alors de porter l'affaire devant le tribunal de première instance de sa ville en mars 2023. Elle demande au juge d'ordonner à Pierre de déplacer sa clôture et de lui payer 500 euros de dommages pour l'utilisation de son terrain.</p>
+      <p>Pierre, de son côté, prétend que la limite entre les deux terrains n'est pas claire et qu'il a le droit de construire à cet endroit.</p>
+      <p>Le tribunal doit donc trancher cette question : Pierre doit-il déplacer sa clôture et payer des dommages à Marie ?</p>
+      <p>Le juge examine les documents cadastraux (les plans officiels des terrains) et les témoignages des voisins. Il s'appuie sur l'article 544 du Code civil qui dit que "la propriété est le droit de jouir et disposer des choses de la manière la plus absolue".</p>
+      <p>Finalement, le juge décide que Pierre doit effectivement déplacer sa clôture car elle empiète sur le terrain de Marie. Il lui ordonne aussi de payer 300 euros de dommages.</p>
+      
+      <h4>Exemple de questions et réponses</h4>
+      
+      <label><strong>Quel est la question que le juge doit trancher dans ce texte ?</strong></label><br>
+      <textarea rows="2" style="width: 100%; margin-bottom: 10px;" readonly>Pierre doit-il déplacer sa clôture et payer des dommages à Marie ?</textarea><br>
+      
+      <label><strong>Quels sont les différents tribunaux saisis et les étapes qui amènent à la décision ?</strong></label><br>
+      <textarea rows="2" style="width: 100%; margin-bottom: 10px;" readonly>Tribunal de première instance de la ville, une seule étape</textarea><br>
+      
+      <label><strong>Qui sont les personnes ou les groupes concernés par cette affaire ?</strong></label><br>
+      <textarea rows="2" style="width: 100%; margin-bottom: 10px;" readonly>Marie (demandresse) et Pierre (défendeur), deux voisins</textarea><br>
+      
+      <label><strong>À quel moment cette affaire a-t-elle été portée devant un juge ?</strong></label><br>
+      <textarea rows="2" style="width: 100%; margin-bottom: 10px;" readonly>En mars 2023</textarea><br>
+      
+      <label><strong>Raconter simplement ce qui s'est passé et ce qui a conduit à aller devant un juge ?</strong></label><br>
+      <textarea rows="2" style="width: 100%; margin-bottom: 10px;" readonly>Pierre a construit une clôture qui empiète sur le terrain de Marie, elle a demandé de la déplacer mais il a refusé</textarea><br>
+      
+      <label><strong>Qu'avaient décidé la justice dans cette affaire avant cette décision ?</strong></label><br>
+      <textarea rows="2" style="width: 100%; margin-bottom: 10px;" readonly>Rien, c'est la première décision de justice sur cette affaire</textarea><br>
+      
+      <label><strong>Quelle est la décision du juge ?</strong></label><br>
+      <textarea rows="2" style="width: 100%; margin-bottom: 10px;" readonly>Pierre doit déplacer sa clôture et payer 300 euros de dommages à Marie</textarea><br>
+      
+      <label><strong>Sur quelles règles ou lois le juge s'est-il appuyé pour prendre sa décision ?</strong></label><br>
+      <textarea rows="2" style="width: 100%; margin-bottom: 10px;" readonly>Article 544 du Code civil sur le droit de propriété</textarea><br>
+    </div>`,
+    `<div style="font-size: 16px; text-align: left; width:65em;">
+      <h3>Maintenant c'est à vous !</h3>
+      <p>Prenez le temps de bien lire chaque document avant de répondre aux questions.</p>
+      <p>Cliquez sur "Suivant" pour commencer l'expérience.</p>
+    </div>`
+  ],
+  button_label_next: "Suivant",
+    button_label_previous: "Précédent",
+  show_clickable_nav: true
+};
+
+// Add to timeline after consent
+timeline.push(instructions_trial);  // Add this line
+
+   // PDF documents and questions
+   const shared_questions = [
+     { label: "Quel est la question que le juge doit trancher dans ce texte ?", name: "q1" },
+     { label: "Quels sont les différents tribunaux saisis et les étapes qui amènent à la décision ?", name: "q2" },
+     { label: "Qui sont les personnes ou les groupes concernés par cette affaire ?", name: "q3" },
+     { label: "À quel moment cette affaire a-t-elle été portée devant un juge ?", name: "q4" },
+     { label: "Raconter simplement ce qui s'est passé et ce qui a conduit à aller devant un juge ?", name: "q5" },
+     { label: "Qu'avaient décidé la justice dans cette affaire avant cette décision ?", name: "q6" },
+     { label: "Quelle est la décision du juge ?", name: "q7" },
+     { label: "Sur quelles règles ou lois le juge s'est-il appuyé pour prendre sa décision ?", name: "q8" }
+   ];
+
+   const pdf_info = [
+     { pdf: "pdf/Ac1.pdf", id: "doc1" },
+     { pdf: "pdf/Ac2.pdf", id: "doc2" }
+   ];
+
+   timeline.push({
+     type: jsPsychPreload,
+     pdf: pdf_info.map(doc => doc.pdf)
+   });
+
+   const pdf_trials = jsPsych.randomization.shuffle(pdf_info).map((doc, index) => {
+     const htmlQuestions = shared_questions.map(q => `
+       <label for="${q.name}">${q.label}</label><br>
+       <textarea name="${q.name}" rows="4" required></textarea><br><br>
+     `).join("");
+
+     return {
+       type: jsPsychSurveyHtmlForm,
+       preamble: `
+         <iframe src="${doc.pdf}" width="150%" height="600px" style="border:1px solid #ccc;"></iframe>
+         <p>Veuillez lire le document et répondre aux questions ci-dessous :</p>
+       `,
+       html: htmlQuestions,
+       button_label: (index === pdf_info.length - 1) ? "Soumettre" : "Soumettre",
+       data: {
+         pdf: doc.pdf,
+         document_id: doc.id,
+         order: index + 1
+       }
+     };
+   });
+
+   timeline.push(...pdf_trials);
+
+   // Questionnaire sur leur profil juridique
+   const LawProfilTrial = {
+     type: jsPsychSurveyHtmlForm,
+     preamble: "<p>Nous approchons de la fin. Merci de répondre aux questions suivantes :</p>",
+     html: `
+       <p>
+         <label>
+           <strong>Est-ce que vous avez eu des difficultés de compréhension en lisant cette décision de justice ?</strong><br>
+           <input type="range" name="difficulte_comprehension" min="1" max="5" value="3" step="1" oninput="document.getElementById('text-zone').style.display = (this.value >= 2) ? 'block' : 'none'">
+           <div style="display: flex; justify-content: space-between; font-size: 0.9em;">
+             <span>1<br><em>Pas du tout</em></span>
+             <span>2</span><span>3</span><span>4</span>
+             <span>5<br><em>Beaucoup</em></span>
+           </div>
+         </label>
+       </p>
+
+       <div id="text-zone" style="display: none; margin-top: 20px;">
+         <label for="explication_difficulte">
+           <strong>Si oui, veuillez expliquer les difficultés que vous avez rencontrées :</strong><br>
+           <textarea name="explication_difficulte" rows="4" cols="50" placeholder="Votre réponse ici..."></textarea>
+         </label>
+       </div>
+
+       <p>
+         <label>
+           <strong>Est-ce que les questions étaient claires ?</strong><br>
+           <select name="questions_claires" required onchange="document.getElementById('clarification-text-zone').style.display = (this.value === 'Non') ? 'block' : 'none'">
+             <option value="" disabled selected>-- Sélectionnez une option --</option>
+             <option value="Oui">Oui</option>
+             <option value="Non">Non</option>
+           </select>
+         </label>
+       </p>
+
+       <div id="clarification-text-zone" style="display: none; margin-top: 20px;">
+         <label for="explication_clarite">
+           <strong>Si non, pouvez-vous expliquer les difficultés rencontrées ?</strong><br>
+           <textarea name="explication_clarite" rows="4" cols="50" placeholder="Votre réponse ici..."></textarea>
+         </label>
+       </div>
+
+       <p>
+         <label for="PremièreLecture"><strong>Est-ce la première fois que vous lisez une décision de justice ?</strong></label><br>
+         <select name="PreLecture" id="PremièreLecture" required>
+           <option value="">-- Sélectionnez --</option>
+           <option value="Oui">Oui</option>
+           <option value="Non">Non</option>
+         </select>
+       </p>
+
+       <p>
+         <label>
+           <strong>Évaluez votre familiarité avec les décisions de justice :</strong><br>
+           <input type="range" name="familiarite_justice" min="1" max="5" value="3" step="1">
+           <div style="display: flex; justify-content: space-between;">
+             <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+           </div>
+         </label>
+       </p>
+
+       <p>
+         <label for="commentaires">
+           <strong>Avez-vous d'autres commentaires ?</strong><br>
+           <textarea name="commentaires" rows="5" cols="60" placeholder="Votre réponse ici... (facultatif)"></textarea>
+         </label>
+       </p>
+     `,
+     button_label: "Continuer",
+     on_finish: function (data) {
+       if (data.response) {
+         for (const [key, value] of Object.entries(data.response)) {
+           data[key] = value;
+         }
+       }
+     }
+   };
+   timeline.push(LawProfilTrial);
+
+
+
+
+   var IDQuestionnaireTrial = {
+ type: jsPsychSurveyHtmlForm,
+ preamble: "<p>Nous arrivons bientôt à la fin de l'étude ! Veuillez répondre à quelques questions supplémentaires pour compléter le sondage.</p>",
+ html: `
+
+   <!-- Gender -->
+   <p>
+     <label>
+       <strong>Gender</strong><br>
+       Please type your answer and click enter from the keyboard.<br>
+       <input type="text" name="gender" required>
+     </label>
+   </p>
+
+   <!-- Dropdown: Age -->
+   <p>
+     <label for="age"><strong>Age</strong></label><br>
+     <select name="age" id="age" required>
+       <option value="">-- Select --</option>
+       <option value="18-29">18–29</option>
+       <option value="30-39">30–39</option>
+       <option value="40-49">40–49</option>
+       <option value="50-59">50–59</option>
+       <option value="60-69">60–69</option>
+       <option value="70-79">70–79</option>
+       <option value="80+">80+</option>
+     </select>
+   </p>
+
+       <!--Textinput: Milieu professionnel -->
+
+   <p>
+         <label for="MilieuPro">
+           <strong>Milieu professionnel:Indiquez quel est le dernier diplôme obtenu et sa spécialité</strong><br>
+           <textarea name="SpécialitéDiplôme" rows="5" cols="60" placeholder="Votre réponse ici... (facultatif)"></textarea>
+         </label>
+       </p>
+
+
+
+       <!--Textinput: Milieu professionnel -->
+
+   <p>
+         <label for="EntréeDuTerritoireNational">
+           <strong>Depuis quand résidez-vous sur le territoire national ? (question facultative, à répondre uniquement si concerné par la question)</strong><br>
+           <textarea name="EntréeDuTerritoireFr" rows="5" cols="60" placeholder="Votre réponse ici... (facultatif)"></textarea>
+         </label>
+       </p>
+
+
+   <!-- Dropdown: Language maternelle -->
+   <p>
+     <label for="L1"><strong>Est-ce que le français est votre langue maternelle ?</strong></label><br>
+     <select name="L1" id="L1" required>
+       <option value="">-- Select --</option>
+       <option value="oui">Oui</option>
+       <option value="non">Non</option>
+       <option value="bilingue">Bilingue</option>
+     </select>
+   </p>
+ `,
+ button_label: "Continue",
+ on_load: function() {
+   // Wait until the form is available before adding the event listener
+   const form = document.getElementById("surveyForm");
+   
+   if (form) {
+     form.addEventListener("submit", function (e) {
+       e.preventDefault();
+       
+       // Collect all form data into an object
+       const formData = new FormData(e.target);
+       const responses = {};
+
+       // Iterate over each question and store the response
+       Object.keys(formData).forEach((key) => {
+         responses[key] = formData.get(key);
+       });
+
+       // Finish the trial and store the responses under the 'response' key
+       jsPsych.finishTrial({ response: responses });
+     });
+   } else {
+     console.error('Form not found!');
+   }
+ },
+ // Flatten the nested responses into individual fields in the trial data
+ on_finish: function(data) {
+   const responses = data.response;
+
+   // Flatten each response and add it to the top level of the data object
+   for (const [key, value] of Object.entries(responses)) {
+     data[key] = value;  // Adding each response as a separate top-level field
+   }
+
+   // Optionally, log the flattened data to the console for verification
+   console.log("Flattened responses:", data);
+ }
+};
+
+// Push the lingbackTrial to the timeline
+timeline.push(IDQuestionnaireTrial);
+
+
+const upload = {
+   type: jsPsychNextcloudFiledropPlugin,
+   url: 'https://cloud.llf-paris.fr/nextcloud',
+   folder: 'gxmabEYQ8xHQ3YK',
+   generate_download_url_on_error: true
+ };
+
+ 
+timeline.push(upload);
+
+
+var final_page = {
+     type: jsPsychInstructions,
+     pages: [ 
+       `
+       <div style="text-align: left;">
+   
+<p> 
+L'expérience est finie !
+</p>
+     
+<p> 
+Merci beaucoup d'avoir participé à notre étude !</p>
+
+       </div>
+      ` 
+     ]
+   };
+   timeline.push(final_page);
+
+
+
+   jsPsych.run(timeline);
+ </script>
+</html>
